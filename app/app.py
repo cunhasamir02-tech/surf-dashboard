@@ -1,7 +1,3 @@
-"""
-Dashboard de Surf — App Flask
-"""
-
 import os
 import time
 import datetime
@@ -11,11 +7,10 @@ import surf_client as surf
 app = Flask(__name__)
 START_TIME = time.time()
 
-surf.init_db()
-
 
 @app.route("/")
 def dashboard():
+    surf.init_db()
     surf.log_visit("/")
     surf.refresh_all_spots()
     spots = surf.get_all_spots()
@@ -41,6 +36,7 @@ def dashboard():
 
 @app.route("/api/surf")
 def api_surf():
+    surf.init_db()
     surf.log_visit("/api/surf")
     surf.refresh_all_spots()
     spots = surf.get_all_spots()
@@ -72,6 +68,5 @@ def healthz():
 
 
 if __name__ == "__main__":
-    surf.refresh_all_spots()
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
