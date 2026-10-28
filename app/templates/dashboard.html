@@ -5,7 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🏄 Ondas do Brasil</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0e1a; color: #e0e6f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    a { color: #00c8ff; text-decoration: none; }
+    header { background: linear-gradient(135deg, #0d2137 0%, #0a3d5c 100%); border-bottom: 2px solid #00c8ff33; padding: 1.5rem 2rem; }
+    .header-inner h1 { font-size: 2rem; color: #00c8ff; }
+    .subtitle { color: #8ab4cc; font-size: 0.85rem; margin-top: 0.3rem; }
+    main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+    .card { background: #111827; border: 1px solid #1e3a5f; border-radius: 12px; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    .card.highlight { border-color: #00c896; }
+    .card-label { font-size: 0.78rem; color: #6b8fa8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card-value { font-size: 2rem; font-weight: 700; color: #e0e6f0; }
+    .card-sub { font-size: 0.8rem; color: #8ab4cc; }
+    .chart-section { background: #111827; border: 1px solid #1e3a5f; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
+    .chart-section h2 { font-size: 1.1rem; color: #00c8ff; margin-bottom: 1rem; }
+    canvas { max-height: 320px; }
+    .table-section { background: #111827; border: 1px solid #1e3a5f; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
+    .table-section h2 { font-size: 1.1rem; color: #00c8ff; margin-bottom: 1rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th { background: #0d2137; color: #8ab4cc; text-align: left; padding: 0.6rem 0.75rem; font-weight: 600; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #1e3a5f; transition: background 0.15s; }
+    tbody tr:hover { background: #162032; }
+    tbody tr.top { background: #0d2a1e; }
+    tbody td { padding: 0.6rem 0.75rem; vertical-align: middle; }
+    tbody td small { color: #6b8fa8; font-size: 0.78rem; }
+    .score { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; }
+    .score-high { background: #003d2b; color: #00c896; }
+    .score-mid { background: #3d2e00; color: #f0b429; }
+    .score-low { background: #3d0d0d; color: #e05c5c; }
+    footer { text-align: center; padding: 1.5rem; color: #4a6a80; font-size: 0.8rem; border-top: 1px solid #1e3a5f; }
+  </style>
 </head>
 <body>
   <header>
@@ -14,7 +46,6 @@
       <p class="subtitle">Condições em tempo real nos principais spots de surf · dados via Open-Meteo · atualizado {{ server_time }}</p>
     </div>
   </header>
-
   <main>
     <section class="cards">
       <div class="card">
@@ -32,39 +63,29 @@
         <span class="card-sub">uptime {{ uptime }}s</span>
       </div>
     </section>
-
     <section class="chart-section">
       <h2>Ranking dos melhores spots 🌊</h2>
       <canvas id="scoreChart"></canvas>
     </section>
-
     <section class="chart-section" id="tide-section">
       <h2>Altura das ondas — <span id="tide-spot-name">{{ spots[0].name if spots else '' }}</span></h2>
       <canvas id="tideChart"></canvas>
     </section>
-
     <section class="table-section">
       <h2>Todos os spots</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Spot</th>
-              <th>Estado</th>
-              <th>Onda (m)</th>
-              <th>Período (s)</th>
-              <th>Vento (km/h)</th>
-              <th>Água (°C)</th>
-              <th>Score</th>
-              <th>Atualizado</th>
+              <th>#</th><th>Spot</th><th>Estado</th><th>Onda (m)</th>
+              <th>Período (s)</th><th>Vento (km/h)</th><th>Água (°C)</th>
+              <th>Score</th><th>Atualizado</th>
             </tr>
           </thead>
           <tbody>
             {% for s in spots %}
             <tr class="spot-row {% if loop.index == 1 %}top{% endif %}"
-                data-spot-id="{{ s.spot_id }}"
-                data-spot-name="{{ s.name }}">
+                data-spot-id="{{ s.spot_id }}" data-spot-name="{{ s.name }}">
               <td>{{ loop.index }}</td>
               <td><strong>{{ s.name }}</strong><br><small>{{ s.city }}</small></td>
               <td>{{ s.state }}</td>
@@ -81,11 +102,9 @@
       </div>
     </section>
   </main>
-
   <footer>
     <p>Dados: <a href="https://open-meteo.com" target="_blank">Open-Meteo Marine API</a> · Banco: PostgreSQL na Aiven.io · Deploy: Render.com</p>
   </footer>
-
   <script>
     const spots = {{ spots | tojson }};
     const top10 = spots.slice(0, 10);
@@ -93,18 +112,41 @@
       type: "bar",
       data: {
         labels: top10.map(s => s.name),
-        datasets: [{
-          label: "Score de surf",
-          data: top10.map(s => s.score),
-          backgroundColor: top10.map(s =>
-            s.score >= 7 ? "#00c896" : s.score >= 4 ? "#f0b429" : "#e05c5c"
-          ),
-          borderRadius: 6,
-        }]
+        datasets: [{ label: "Score de surf", data: top10.map(s => s.score),
+          backgroundColor: top10.map(s => s.score >= 7 ? "#00c896" : s.score >= 4 ? "#f0b429" : "#e05c5c"),
+          borderRadius: 6 }]
       },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, max: 10, ticks: { color: "#ccc" }, grid: { color: "#333" } },
-          x: { ticks: { color: "#
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 10, ticks: { color: "#ccc" }, grid: { color: "#333" } },
+          x: { ticks: { color: "#ccc" }, grid: { color: "#333" } } } }
+    });
+    let tideChart = null;
+    async function loadTides(spotId, spotName) {
+      document.getElementById("tide-spot-name").textContent = spotName;
+      const resp = await fetch(`/api/tides/${spotId}`);
+      const data = await resp.json();
+      const tides = data.tides || [];
+      if (tideChart) tideChart.destroy();
+      tideChart = new Chart(document.getElementById("tideChart"), {
+        type: "line",
+        data: { labels: tides.map(t => t.ts.slice(11, 16)),
+          datasets: [{ label: "Altura da onda (m)", data: tides.map(t => t.height),
+            borderColor: "#00c8ff", backgroundColor: "rgba(0,200,255,0.1)",
+            tension: 0.4, fill: true, pointRadius: 3 }] },
+        options: { responsive: true, plugins: { legend: { labels: { color: "#ccc" } } },
+          scales: { y: { ticks: { color: "#ccc" }, grid: { color: "#333" } },
+            x: { ticks: { color: "#ccc", maxTicksLimit: 12 }, grid: { color: "#333" } } } }
+      });
+    }
+    if (spots.length > 0) loadTides(spots[0].spot_id, spots[0].name);
+    document.querySelectorAll(".spot-row").forEach(row => {
+      row.style.cursor = "pointer";
+      row.addEventListener("click", () => {
+        loadTides(row.dataset.spotId, row.dataset.spotName);
+        document.getElementById("tide-section").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+  </script>
+</body>
+</html>
+
