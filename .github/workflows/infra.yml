@@ -1,0 +1,44 @@
+name: Infra - Provisionar Aiven (Terraform)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: Terraform plan/apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: terraform
+        env:
+          TF_VAR_aiven_api_token: ${{ secrets.AIVEN_API_TOKEN }}
+          TF_VAR_aiven_project:   ${{ secrets.AIVEN_PROJECT }}
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_aiven_api_token: ${{ secrets.AIVEN_API_TOKEN }}
+          TF_VAR_aiven_project:   ${{ secrets.AIVEN_PROJECT }}
+        run: terraform apply -auto-approve tfplan
+
+      - name: Exportar URI de conexão
+        working-directory: terraform
+        env:
+          TF_VAR_aiven_api_token: ${{ secrets.AIVEN_API_TOKEN }}
+          TF_VAR_aiven_project:   ${{ secrets.AIVEN_PROJECT }}
+        run: terraform output -json
