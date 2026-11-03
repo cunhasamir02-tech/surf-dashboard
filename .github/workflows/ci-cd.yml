@@ -1,0 +1,61 @@
+name: CI/CD - Surf Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "Dockerfile"
+
+env:
+  IMAGE_NAME: ghcr.io/cunhasamir02-tech/surf-dashboard/surf-app
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependências
+        working-directory: app
+        run: pip install -r requirements.txt flake8
+      - name: Lint
+        working-directory: app
+        run: flake8 . --max-line-length=120 --extend-ignore=E501,W503 --exit-zero
+      - name: Sintaxe
+        working-directory: app
+        run: python -m py_compile app.py surf_client.py
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy no Render
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+      - name: Health check
+        run: |
+          sleep 45
+          curl -fsS "${{ secrets.APP_HEALTHCHECK_URL }}/healthz"
