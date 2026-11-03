@@ -3,122 +3,424 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🏄 Ondas do Brasil</title>
+  <title>SurfRadar Brasil — Condições em Tempo Real</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0a0e1a;color:#e0e6f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
-    a{color:#00c8ff;text-decoration:none}
-    header{background:linear-gradient(135deg,#0d2137,#0a3d5c);border-bottom:2px solid #00c8ff33;padding:1.5rem 2rem}
-    header h1{font-size:2rem;color:#00c8ff}
-    .subtitle{color:#8ab4cc;font-size:.85rem;margin-top:.3rem}
-    main{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2.5rem}
-    .card{background:#111827;border:1px solid #1e3a5f;border-radius:12px;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.25rem}
-    .card.highlight{border-color:#00c896}
-    .card-label{font-size:.78rem;color:#6b8fa8;text-transform:uppercase;letter-spacing:.05em}
-    .card-value{font-size:2rem;font-weight:700;color:#e0e6f0}
-    .card-sub{font-size:.8rem;color:#8ab4cc}
-    .chart-section{background:#111827;border:1px solid #1e3a5f;border-radius:12px;padding:1.5rem;margin-bottom:2rem}
-    .chart-section h2{font-size:1.1rem;color:#00c8ff;margin-bottom:1rem}
-    canvas{max-height:320px}
-    .table-section{background:#111827;border:1px solid #1e3a5f;border-radius:12px;padding:1.5rem;margin-bottom:2rem}
-    .table-section h2{font-size:1.1rem;color:#00c8ff;margin-bottom:1rem}
-    .table-wrap{overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:.88rem}
-    thead th{background:#0d2137;color:#8ab4cc;text-align:left;padding:.6rem .75rem;font-weight:600;white-space:nowrap}
-    tbody tr{border-bottom:1px solid #1e3a5f;transition:background .15s}
-    tbody tr:hover{background:#162032}
-    tbody tr.top{background:#0d2a1e}
-    tbody td{padding:.6rem .75rem;vertical-align:middle}
-    tbody td small{color:#6b8fa8;font-size:.78rem}
-    .score{display:inline-block;padding:.2rem .55rem;border-radius:20px;font-weight:700;font-size:.85rem}
-    .score-high{background:#003d2b;color:#00c896}
-    .score-mid{background:#3d2e00;color:#f0b429}
-    .score-low{background:#3d0d0d;color:#e05c5c}
-    .empty{text-align:center;padding:3rem;color:#6b8fa8}
-    footer{text-align:center;padding:1.5rem;color:#4a6a80;font-size:.8rem;border-top:1px solid #1e3a5f}
+    :root {
+      --bg: #060b14;
+      --bg2: #0d1724;
+      --bg3: #111f30;
+      --border: #1a3050;
+      --accent: #0ea5e9;
+      --accent2: #06d6a0;
+      --accent3: #f59e0b;
+      --danger: #ef4444;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(6,11,20,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: .6rem;
+      font-size: 1.2rem; font-weight: 800; color: var(--accent);
+      letter-spacing: -.02em;
+    }
+    .nav-brand span { color: var(--text); }
+    .nav-time {
+      font-size: .78rem; color: var(--muted);
+      background: var(--bg3); border: 1px solid var(--border);
+      padding: .3rem .8rem; border-radius: 20px;
+    }
+    .nav-pill {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .72rem; font-weight: 600; color: var(--accent2);
+      background: rgba(6,214,160,.08); border: 1px solid rgba(6,214,160,.2);
+      padding: .3rem .75rem; border-radius: 20px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #060b14 0%, #0d2137 50%, #060b14 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2.5rem;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(14,165,233,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 { font-size: clamp(1.8rem,4vw,3rem); font-weight: 800; letter-spacing: -.03em; }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero p { color: var(--muted); margin-top: .5rem; font-size: .95rem; }
+
+    /* ── LAYOUT ── */
+    main { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── STAT CARDS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .stat {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      display: flex; flex-direction: column; gap: .2rem;
+      box-shadow: var(--card-shadow);
+      transition: border-color .2s;
+    }
+    .stat:hover { border-color: var(--accent); }
+    .stat.featured { border-color: rgba(6,214,160,.4); background: linear-gradient(135deg, var(--bg2), rgba(6,214,160,.05)); }
+    .stat-label { font-size: .7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .stat-value { font-size: 2rem; font-weight: 800; color: var(--text); letter-spacing: -.04em; line-height: 1; margin: .25rem 0; }
+    .stat-sub { font-size: .78rem; color: var(--muted); }
+    .stat-icon { font-size: 1.5rem; margin-bottom: .25rem; }
+
+    /* ── SECTION TITLES ── */
+    .section-header {
+      display: flex; align-items: center; gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-header h2 { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .section-header .badge {
+      font-size: .68rem; font-weight: 600; padding: .2rem .6rem;
+      border-radius: 20px; background: rgba(14,165,233,.1);
+      border: 1px solid rgba(14,165,233,.2); color: var(--accent);
+    }
+
+    /* ── CHARTS ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    @media(max-width:768px){ .charts-grid{ grid-template-columns:1fr; } }
+
+    .chart-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+    }
+    .chart-card canvas { max-height: 260px; }
+
+    /* ── TABLE ── */
+    .table-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2rem;
+    }
+    .table-card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead th {
+      background: var(--bg3);
+      color: var(--muted);
+      text-align: left;
+      padding: .75rem 1rem;
+      font-weight: 600;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    tbody tr:hover { background: rgba(14,165,233,.04); }
+    tbody tr.top-spot { background: rgba(6,214,160,.04); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: .85rem 1rem; vertical-align: middle; }
+    .spot-name { font-weight: 600; color: var(--text); }
+    .spot-city { font-size: .75rem; color: var(--muted); margin-top: .1rem; }
+    .state-badge {
+      display: inline-block;
+      font-size: .68rem; font-weight: 700;
+      padding: .2rem .5rem; border-radius: 6px;
+      background: var(--bg3); color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .rank-num {
+      font-size: .9rem; font-weight: 800; color: var(--muted);
+      width: 28px; text-align: center;
+    }
+    tbody tr.top-spot .rank-num { color: var(--accent2); }
+
+    /* ── SCORE BADGE ── */
+    .score {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 48px; padding: .3rem .6rem;
+      border-radius: 8px; font-weight: 700; font-size: .85rem;
+    }
+    .score-high { background: rgba(6,214,160,.12); color: #06d6a0; border: 1px solid rgba(6,214,160,.2); }
+    .score-mid  { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.2); }
+    .score-low  { background: rgba(239,68,68,.10); color: #ef4444; border: 1px solid rgba(239,68,68,.15); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; padding: 2rem 1rem;
+      color: var(--muted); font-size: .78rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── TIDE SELECTOR ── */
+    .tide-label {
+      font-size: .85rem; color: var(--muted);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .tide-label strong { color: var(--accent); }
   </style>
 </head>
 <body>
-<header>
-  <h1>🏄 Ondas do Brasil</h1>
-  <p class="subtitle">Condições em tempo real nos principais spots · Open-Meteo · {{ server_time }}</p>
-</header>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-brand">🏄 Surf<span>Radar</span></div>
+  <div class="nav-pill"><span class="dot"></span> AO VIVO</div>
+  <div class="nav-time">{{ server_time }}</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Melhores <em>Ondas</em> do Brasil</h1>
+  <p>Condições em tempo real · 15 spots monitorados · dados via Open-Meteo Marine API</p>
+</div>
+
 <main>
-  <section class="cards">
-    <div class="card">
-      <span class="card-label">Spots monitorados</span>
-      <span class="card-value">{{ spots|length }}</span>
+
+  <!-- STATS -->
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-icon">🌊</span>
+      <span class="stat-label">Spots monitorados</span>
+      <span class="stat-value">{{ spots|length }}</span>
+      <span class="stat-sub">todo o litoral brasileiro</span>
     </div>
-    <div class="card highlight">
-      <span class="card-label">🥇 Melhor spot agora</span>
-      <span class="card-value">{{ spots[0].name if spots else '—' }}</span>
-      <span class="card-sub">{{ spots[0].state if spots else '' }}{% if spots %} · score {{ spots[0].score }}{% endif %}</span>
+    <div class="stat featured">
+      <span class="stat-icon">🥇</span>
+      <span class="stat-label">Melhor spot agora</span>
+      <span class="stat-value" style="font-size:1.4rem">{{ spots[0].name if spots else '—' }}</span>
+      <span class="stat-sub">{{ spots[0].state if spots else '' }}{% if spots %} · score {{ spots[0].score }}{% endif %}</span>
     </div>
-    <div class="card">
-      <span class="card-label">Visitas ao dashboard</span>
-      <span class="card-value">{{ total_visits }}</span>
-      <span class="card-sub">uptime {{ uptime }}s</span>
+    <div class="stat">
+      <span class="stat-icon">🌬️</span>
+      <span class="stat-label">Maior onda agora</span>
+      <span class="stat-value">{{ '%.1f'|format(spots[0].wave_height) if spots and spots[0].wave_height else '—' }}<small style="font-size:1rem;font-weight:500"> m</small></span>
+      <span class="stat-sub">{{ spots[0].name if spots else '' }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">👁️</span>
+      <span class="stat-label">Visitas ao dashboard</span>
+      <span class="stat-value">{{ total_visits }}</span>
+      <span class="stat-sub">uptime {{ uptime }}s</span>
     </div>
   </section>
+
+  <!-- CHARTS -->
   {% if spots %}
-  <section class="chart-section">
-    <h2>Ranking dos melhores spots 🌊</h2>
-    <canvas id="scoreChart"></canvas>
-  </section>
-  <section class="chart-section" id="tide-section">
-    <h2>Altura das ondas — <span id="tide-spot-name">{{ spots[0].name }}</span></h2>
-    <canvas id="tideChart"></canvas>
-  </section>
-  {% else %}
-  <div class="empty"><p>🌊 Carregando dados... Recarregue em 1 minuto.</p></div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="section-header">
+        <h2>Ranking de Score</h2>
+        <span class="badge">Top 10</span>
+      </div>
+      <canvas id="scoreChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="section-header">
+        <h2>Altura das Ondas</h2>
+        <span class="tide-label">— <strong id="tide-spot-name">{{ spots[0].name }}</strong></span>
+      </div>
+      <canvas id="tideChart"></canvas>
+    </div>
+  </div>
   {% endif %}
-  <section class="table-section">
-    <h2>Todos os spots</h2>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <div class="section-header" style="margin:0">
+        <h2>Todos os Spots</h2>
+        <span class="badge">{{ spots|length }} locais</span>
+      </div>
+      <span style="font-size:.75rem;color:var(--muted)">Clique para ver o gráfico de ondas</span>
+    </div>
     {% if spots %}
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Spot</th><th>Estado</th><th>Onda (m)</th><th>Período (s)</th><th>Vento (km/h)</th><th>Água (°C)</th><th>Score</th><th>Atualizado</th></tr></thead>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Spot</th>
+            <th>UF</th>
+            <th>Onda (m)</th>
+            <th>Período (s)</th>
+            <th>Vento (km/h)</th>
+            <th>Água (°C)</th>
+            <th>Score</th>
+            <th>Atualizado</th>
+          </tr>
+        </thead>
         <tbody>
           {% for s in spots %}
-          <tr class="spot-row {% if loop.index==1 %}top{% endif %}" data-spot-id="{{ s.spot_id }}" data-spot-name="{{ s.name }}">
-            <td>{{ loop.index }}</td>
-            <td><strong>{{ s.name }}</strong><br><small>{{ s.city }}</small></td>
-            <td>{{ s.state }}</td>
-            <td>{{ '%.2f'|format(s.wave_height) if s.wave_height else '—' }}</td>
+          <tr class="spot-row {% if loop.index==1 %}top-spot{% endif %}"
+              data-spot-id="{{ s.spot_id }}" data-spot-name="{{ s.name }}">
+            <td><span class="rank-num">{{ loop.index }}</span></td>
+            <td>
+              <div class="spot-name">{{ s.name }}</div>
+              <div class="spot-city">{{ s.city }}</div>
+            </td>
+            <td><span class="state-badge">{{ s.state }}</span></td>
+            <td><strong>{{ '%.2f'|format(s.wave_height) if s.wave_height else '—' }}</strong></td>
             <td>{{ '%.1f'|format(s.wave_period) if s.wave_period else '—' }}</td>
             <td>{{ '%.1f'|format(s.wind_speed) if s.wind_speed else '—' }}</td>
             <td>{{ '%.1f'|format(s.water_temp) if s.water_temp else '—' }}</td>
-            <td><span class="score score-{{ 'high' if s.score>=7 else ('mid' if s.score>=4 else 'low') }}">{{ s.score }}</span></td>
-            <td>{{ s.fetched_at or '—' }}</td>
+            <td>
+              <span class="score score-{{ 'high' if s.score>=7 else ('mid' if s.score>=4 else 'low') }}">
+                {{ s.score }}
+              </span>
+            </td>
+            <td style="color:var(--muted);font-size:.78rem">{{ s.fetched_at or '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% else %}
-    <p class="empty">Dados ainda sendo carregados. Recarregue em 1 minuto.</p>
+    <div style="text-align:center;padding:3rem;color:var(--muted)">
+      🌊 Carregando dados... Recarregue em 1 minuto.
+    </div>
     {% endif %}
-  </section>
+  </div>
+
 </main>
-<footer><p>Dados: <a href="https://open-meteo.com" target="_blank">Open-Meteo Marine API</a> · PostgreSQL na Aiven.io · Deploy: Render.com</p></footer>
+
+<footer>
+  <p>
+    Dados: <a href="https://open-meteo.com" target="_blank">Open-Meteo Marine API</a> ·
+    Banco: PostgreSQL na <a href="https://aiven.io" target="_blank">Aiven.io</a> ·
+    Deploy: <a href="https://render.com" target="_blank">Render.com</a> ·
+    Pipeline: GitHub Actions
+  </p>
+</footer>
+
 {% if spots %}
 <script>
-const spots={{ spots|tojson }};
-const top10=spots.slice(0,10);
-new Chart(document.getElementById("scoreChart"),{type:"bar",data:{labels:top10.map(s=>s.name),datasets:[{label:"Score",data:top10.map(s=>s.score),backgroundColor:top10.map(s=>s.score>=7?"#00c896":s.score>=4?"#f0b429":"#e05c5c"),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:10,ticks:{color:"#ccc"},grid:{color:"#333"}},x:{ticks:{color:"#ccc"},grid:{color:"#333"}}}}});
-let tc=null;
-async function loadTides(id,name){
-  document.getElementById("tide-spot-name").textContent=name;
-  const r=await fetch(`/api/tides/${id}`);
-  const d=await r.json();
-  const t=d.tides||[];
-  if(tc)tc.destroy();
-  tc=new Chart(document.getElementById("tideChart"),{type:"line",data:{labels:t.map(x=>x.ts.slice(11,16)),datasets:[{label:"Onda (m)",data:t.map(x=>x.height),borderColor:"#00c8ff",backgroundColor:"rgba(0,200,255,0.1)",tension:0.4,fill:true,pointRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:"#ccc"}}},scales:{y:{ticks:{color:"#ccc"},grid:{color:"#333"}},x:{ticks:{color:"#ccc",maxTicksLimit:12},grid:{color:"#333"}}}}});
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = '#1a3050';
+
+const spots = {{ spots | tojson }};
+const top10 = spots.slice(0, 10);
+
+// Score chart
+new Chart(document.getElementById("scoreChart"), {
+  type: "bar",
+  data: {
+    labels: top10.map(s => s.name.length > 12 ? s.name.slice(0,12)+'…' : s.name),
+    datasets: [{
+      data: top10.map(s => s.score),
+      backgroundColor: top10.map(s =>
+        s.score >= 7 ? 'rgba(6,214,160,.7)' :
+        s.score >= 4 ? 'rgba(245,158,11,.7)' :
+        'rgba(239,68,68,.6)'
+      ),
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` Score: ${ctx.raw}` } }
+    },
+    scales: {
+      y: { beginAtZero: true, max: 10, grid: { color: '#1a3050' }, ticks: { color: '#64748b' } },
+      x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }
+    }
+  }
+});
+
+// Tide chart
+let tideChart = null;
+async function loadTides(id, name) {
+  document.getElementById("tide-spot-name").textContent = name;
+  try {
+    const r = await fetch(`/api/tides/${id}`);
+    const d = await r.json();
+    const t = d.tides || [];
+    if (tideChart) tideChart.destroy();
+    tideChart = new Chart(document.getElementById("tideChart"), {
+      type: "line",
+      data: {
+        labels: t.map(x => x.ts.slice(11, 16)),
+        datasets: [{
+          label: "Onda (m)",
+          data: t.map(x => x.height),
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14,165,233,0.08)',
+          tension: 0.4, fill: true, pointRadius: 2,
+          pointHoverRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { grid: { color: '#1a3050' }, ticks: { color: '#64748b' } },
+          x: { grid: { display: false }, ticks: { color: '#64748b', maxTicksLimit: 8 } }
+        }
+      }
+    });
+  } catch(e) { console.warn(e); }
 }
-if(spots.length>0)loadTides(spots[0].spot_id,spots[0].name);
-document.querySelectorAll(".spot-row").forEach(r=>{r.style.cursor="pointer";r.addEventListener("click",()=>{loadTides(r.dataset.spotId,r.dataset.spotName);document.getElementById("tide-section").scrollIntoView({behavior:"smooth"});});});
+
+if (spots.length > 0) loadTides(spots[0].spot_id, spots[0].name);
+
+document.querySelectorAll(".spot-row").forEach(row => {
+  row.addEventListener("click", () => {
+    loadTides(row.dataset.spotId, row.dataset.spotName);
+    document.querySelector(".charts-grid").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
 </script>
 {% endif %}
 </body>
